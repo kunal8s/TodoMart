@@ -804,6 +804,28 @@ sequenceDiagram
 
 ---
 
+## 🚀 Deployment & Troubleshooting
+
+### Common Issues
+
+#### 1. 404 Not Found on Page Reload (Frontend)
+If you see a "Not Found" error when reloading pages like `/signup` or `/dashboard` on Render, it's because of Client-Side Routing.
+
+**The Fix:**
+1. Go to your **Static Site** dashboard on Render.
+2. Click on **Redirects/Rewrites** in the sidebar.
+3. Add a new rule:
+   - **Source:** `/*`
+   - **Destination:** `/index.html`
+   - **Action:** `Rewrite`
+4. Click **Save Changes**.
+
+This tells Render to send all requests to your React app so it can handle the routing.
+
+---
+
+## 📊 Sequence Diagram
+
 ## 🗄 Database Schema
 
 ### Users Table
