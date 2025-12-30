@@ -38,6 +38,10 @@ const Dashboard = () => {
     const [profileError, setProfileError] = useState('');
     const [profileSuccess, setProfileSuccess] = useState('');
 
+    // Search and filter states
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterBy, setFilterBy] = useState('all'); // 'all', 'recent', 'oldest'
+
     // Get user from localStorage
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -466,6 +470,58 @@ const Dashboard = () => {
                     )}
                 </div>
 
+                {/* Search and Filter Bar */}
+                <div className="mb-8 flex flex-col sm:flex-row gap-4">
+                    {/* Search Input */}
+                    <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search todos by name or description..."
+                            className="w-full pl-12 pr-10 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white shadow-sm"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Filter Dropdown */}
+                    <select
+                        value={filterBy}
+                        onChange={(e) => setFilterBy(e.target.value)}
+                        className="px-4 py-3 border border-gray-300 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white shadow-sm cursor-pointer"
+                    >
+                        <option value="all">All Items</option>
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="az">A-Z</option>
+                        <option value="za">Z-A</option>
+                    </select>
+                </div>
+
+                {/* Results count */}
+                {searchQuery && (
+                    <div className="mb-4 text-sm text-gray-600">
+                        Found {todos.filter(todo =>
+                            todo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (todo.description && todo.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                        ).length} result(s) for "{searchQuery}"
+                    </div>
+                )}
+
                 {/* Todo Cards Grid */}
                 {isLoading ? (
                     <div className="flex items-center justify-center py-20">
@@ -486,83 +542,125 @@ const Dashboard = () => {
                             <span>Add Your First Item</span>
                         </button>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {todos.map((todo) => (
-                            <div
-                                key={todo.id}
-                                className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all duration-200 hover:shadow-xl ${isRemoveMode && selectedTodos.includes(todo.id)
-                                    ? 'border-red-400 bg-red-50'
-                                    : 'border-gray-100 hover:border-purple-200'
-                                    }`}
-                            >
-                                {/* Selection checkbox for remove mode */}
-                                {isRemoveMode && (
-                                    <div className="absolute top-4 left-4 z-10">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedTodos.includes(todo.id)}
-                                            onChange={() => toggleTodoSelection(todo.id)}
-                                            className="cursor-pointer w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                                        />
-                                    </div>
-                                )}
+                ) : (() => {
+                    // Filter and sort todos
+                    let filteredTodos = todos.filter(todo =>
+                        todo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (todo.description && todo.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                    );
 
-                                {/* Options dropdown */}
-                                {!isRemoveMode && (
-                                    <div className="absolute top-4 right-4" ref={activeDropdown === todo.id ? dropdownRef : null}>
-                                        <button
-                                            onClick={() => setActiveDropdown(activeDropdown === todo.id ? null : todo.id)}
-                                            className="cursor-pointer p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                        >
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                            </svg>
-                                        </button>
+                    // Sort based on filter
+                    switch (filterBy) {
+                        case 'recent':
+                            filteredTodos = [...filteredTodos].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                            break;
+                        case 'oldest':
+                            filteredTodos = [...filteredTodos].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                            break;
+                        case 'az':
+                            filteredTodos = [...filteredTodos].sort((a, b) => a.name.localeCompare(b.name));
+                            break;
+                        case 'za':
+                            filteredTodos = [...filteredTodos].sort((a, b) => b.name.localeCompare(a.name));
+                            break;
+                        default:
+                            break;
+                    }
 
-                                        {/* Dropdown menu */}
-                                        {activeDropdown === todo.id && (
-                                            <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
-                                                <button
-                                                    onClick={() => openEditModal(todo)}
-                                                    className="cursor-pointer w-full px-4 py-2 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-600 flex items-center space-x-2 transition-colors"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                    </svg>
-                                                    <span>Update</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => openDeleteConfirm(todo.id)}
-                                                    className="cursor-pointer w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                    <span>Delete</span>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                    if (filteredTodos.length === 0 && searchQuery) {
+                        return (
+                            <div className="text-center py-20">
+                                <div className="text-6xl mb-4">🔍</div>
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">No results found</h3>
+                                <p className="text-gray-500 mb-6">Try searching with different keywords</p>
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="cursor-pointer inline-flex items-center space-x-2 px-6 py-3 border-2 border-purple-300 text-purple-600 font-semibold rounded-xl hover:bg-purple-50 transition-all duration-200"
+                                >
+                                    <span>Clear Search</span>
+                                </button>
+                            </div>
+                        );
+                    }
 
-                                {/* Card content */}
-                                <div className={`p-6 ${isRemoveMode ? 'pl-12' : ''}`} onClick={isRemoveMode ? () => toggleTodoSelection(todo.id) : undefined}>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2 pr-8 line-clamp-2">{todo.name}</h3>
-                                    {todo.description && (
-                                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">{todo.description}</p>
+                    return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredTodos.map((todo) => (
+                                <div
+                                    key={todo.id}
+                                    className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all duration-200 hover:shadow-xl ${isRemoveMode && selectedTodos.includes(todo.id)
+                                        ? 'border-red-400 bg-red-50'
+                                        : 'border-gray-100 hover:border-purple-200'
+                                        }`}
+                                >
+                                    {/* Selection checkbox for remove mode */}
+                                    {isRemoveMode && (
+                                        <div className="absolute top-4 left-4 z-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedTodos.includes(todo.id)}
+                                                onChange={() => toggleTodoSelection(todo.id)}
+                                                className="cursor-pointer w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                                            />
+                                        </div>
                                     )}
-                                    <div className="flex items-center text-xs text-gray-400">
-                                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        {formatDate(todo.createdAt)}
+
+                                    {/* Options dropdown */}
+                                    {!isRemoveMode && (
+                                        <div className="absolute top-4 right-4" ref={activeDropdown === todo.id ? dropdownRef : null}>
+                                            <button
+                                                onClick={() => setActiveDropdown(activeDropdown === todo.id ? null : todo.id)}
+                                                className="cursor-pointer p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                            >
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                                </svg>
+                                            </button>
+
+                                            {/* Dropdown menu */}
+                                            {activeDropdown === todo.id && (
+                                                <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
+                                                    <button
+                                                        onClick={() => openEditModal(todo)}
+                                                        className="cursor-pointer w-full px-4 py-2 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-600 flex items-center space-x-2 transition-colors"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                        <span>Update</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openDeleteConfirm(todo.id)}
+                                                        className="cursor-pointer w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Card content */}
+                                    <div className={`p-6 ${isRemoveMode ? 'pl-12' : ''}`} onClick={isRemoveMode ? () => toggleTodoSelection(todo.id) : undefined}>
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2 pr-8 line-clamp-2">{todo.name}</h3>
+                                        {todo.description && (
+                                            <p className="text-gray-600 text-sm mb-4 line-clamp-3">{todo.description}</p>
+                                        )}
+                                        <div className="flex items-center text-xs text-gray-400">
+                                            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            {formatDate(todo.createdAt)}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    );
+                })()}
             </main>
 
             {/* Add Todo Modal */}
