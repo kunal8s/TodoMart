@@ -4,6 +4,7 @@ import homeroutes from './homepage.routes.js';
 import signinroutes from './signin.routes.js';
 import dashboardroutes from './dashboard.routes.js';
 import todoroutes from './todo.routes.js';
+import userroutes from './user.routes.js';
 
 const router = express.Router();
 
@@ -12,5 +13,6 @@ router.use('/home', homeroutes);
 router.use('/signin', signinroutes);
 router.use('/dashboard', dashboardroutes);
 router.use('/todos', todoroutes);
+router.use('/user', userroutes);
 
 export default router;

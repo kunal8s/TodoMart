@@ -19,6 +19,9 @@ export const API_ENDPOINTS = {
     TODO_BY_ID: (id) => `${API_BASE_URL}/api/todos/${id}`,
     TODOS_BULK_DELETE: `${API_BASE_URL}/api/todos/bulk-delete`,
 
+    // User Profile
+    USER_PROFILE: `${API_BASE_URL}/api/user/profile`,
+
     // Health
     HEALTH: `${API_BASE_URL}/health`,
 };

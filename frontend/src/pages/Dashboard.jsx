@@ -32,11 +32,23 @@ const Dashboard = () => {
     const [formError, setFormError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Profile modal states
+    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [profileData, setProfileData] = useState({ firstName: '', lastName: '', email: '' });
+    const [profileError, setProfileError] = useState('');
+    const [profileSuccess, setProfileSuccess] = useState('');
+
     // Get user from localStorage
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setProfileData({
+                firstName: userData.firstName || '',
+                lastName: userData.lastName || '',
+                email: userData.email || '',
+            });
         } else {
             navigate('/signin');
         }
@@ -270,6 +282,62 @@ const Dashboard = () => {
         });
     };
 
+    // Handle profile update
+    const handleProfileUpdate = async (e) => {
+        e.preventDefault();
+        setProfileError('');
+        setProfileSuccess('');
+
+        if (!profileData.firstName.trim() || !profileData.lastName.trim()) {
+            setProfileError('First name and last name are required');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const response = await fetch(API_ENDPOINTS.USER_PROFILE, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({
+                    firstName: profileData.firstName.trim(),
+                    lastName: profileData.lastName.trim(),
+                    email: profileData.email.trim(),
+                }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                // Update local storage and state
+                localStorage.setItem('user', JSON.stringify(data.user));
+                setUser(data.user);
+                setProfileSuccess('Profile updated successfully!');
+                setTimeout(() => {
+                    setShowProfileModal(false);
+                    setProfileSuccess('');
+                }, 1500);
+            } else {
+                setProfileError(data.message || 'Failed to update profile');
+            }
+        } catch (err) {
+            console.error('Profile update error:', err);
+            setProfileError('Failed to update profile. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openProfileModal = () => {
+        setProfileData({
+            firstName: user?.firstName || '',
+            lastName: user?.lastName || '',
+            email: user?.email || '',
+        });
+        setProfileError('');
+        setProfileSuccess('');
+        setShowProfileModal(true);
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
             {/* Background decorative elements */}
@@ -302,6 +370,15 @@ const Dashboard = () => {
                                     <span className="font-semibold text-gray-900">{user.firstName}</span>
                                 </div>
                             )}
+                            <button
+                                onClick={openProfileModal}
+                                className="cursor-pointer flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all duration-200"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span className="hidden sm:inline font-medium">Profile</span>
+                            </button>
                             <button
                                 onClick={handleLogout}
                                 className="cursor-pointer flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
@@ -665,6 +742,94 @@ const Dashboard = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Profile Update Modal */}
+            {showProfileModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-gray-900">Update Profile</h3>
+                            <button
+                                onClick={() => {
+                                    setShowProfileModal(false);
+                                    setProfileError('');
+                                    setProfileSuccess('');
+                                }}
+                                className="cursor-pointer p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {profileError && (
+                            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                                {profileError}
+                            </div>
+                        )}
+
+                        {profileSuccess && (
+                            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-600">
+                                {profileSuccess}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleProfileUpdate} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                                <input
+                                    type="text"
+                                    value={profileData.firstName}
+                                    onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                    placeholder="Enter first name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                                <input
+                                    type="text"
+                                    value={profileData.lastName}
+                                    onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                    placeholder="Enter last name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    value={profileData.email}
+                                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                    placeholder="Enter email"
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowProfileModal(false);
+                                        setProfileError('');
+                                        setProfileSuccess('');
+                                    }}
+                                    className="cursor-pointer flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="cursor-pointer flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-500 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-blue-600 transition-all disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Saving...' : 'Save Profile'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
