@@ -399,7 +399,90 @@ POST /api/signin/logout
 
 ---
 
-### 📝 Todo Endpoints (Protected)
+### � User Profile Endpoints (Protected)
+
+> ⚠️ **Authentication Required**: All profile endpoints require a valid JWT token.
+
+#### 1. Get User Profile
+Retrieves the authenticated user's profile.
+
+```http
+GET /api/user/profile
+Authorization: Bearer <token>
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "user": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "newsletterSubscribed": true,
+    "createdAt": "2024-12-30T10:00:00.000Z",
+    "updatedAt": "2024-12-30T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### 2. Update User Profile
+Updates the authenticated user's profile.
+
+```http
+PUT /api/user/profile
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "email": "john.smith@example.com"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| firstName | string | No | First name (2-50 chars) |
+| lastName | string | No | Last name (2-50 chars) |
+| email | string | No | Valid email (max 100 chars) |
+
+> At least one field must be provided.
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "user": {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Smith",
+    "email": "john.smith@example.com",
+    "newsletterSubscribed": true,
+    "createdAt": "2024-12-30T10:00:00.000Z",
+    "updatedAt": "2024-12-30T12:00:00.000Z"
+  }
+}
+```
+
+**Error Response (409 Conflict):**
+```json
+{
+  "success": false,
+  "message": "Email is already in use by another account"
+}
+```
+
+---
+
+### �📝 Todo Endpoints (Protected)
 
 > ⚠️ **Authentication Required**: All todo endpoints require a valid JWT token.
 
